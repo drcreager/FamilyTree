@@ -1,0 +1,13 @@
+table, th, td{
+    background-image: url("../images/aCreagerCoatOfArms_v1.gif");
+    background-repeat: no-repeat;
+    background-position: right bottom;
+    background-color: #FFFFFF;
+    padding: 10px 10px 10px 10px;
+    margin: 75px auto auto auto;
+    width: 70%;
+    height: 70%;
+    border: 5px solid black;
+}
+
+body {text-align: left;}

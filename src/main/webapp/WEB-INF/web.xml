@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+	id="WebApp_ID" version="3.0">
+	<display-name>FamilyTree</display-name>
+	
+	<servlet>
+		<servlet-name>Controller Servlet</servlet-name>
+		<servlet-class>com.ko.na.web.ControllerServlet</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>Controller Servlet</servlet-name>
+		<url-pattern>/cntlr</url-pattern>
+	</servlet-mapping>
+
+	<servlet>
+		<servlet-name>Detail Servlet</servlet-name>
+		<servlet-class>com.ko.na.web.DetailServlet</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>Detail Servlet</servlet-name>
+		<url-pattern>/detail</url-pattern>
+	</servlet-mapping>
+	
+	<servlet>
+		<servlet-name>Index Servlet</servlet-name>
+		<servlet-class>com.ko.na.web.Index</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>Index Servlet</servlet-name>
+		<url-pattern>/index</url-pattern>
+	</servlet-mapping>
+
+	<servlet>
+		<servlet-name>List Servlet</servlet-name>
+		<servlet-class>com.ko.na.web.ListServlet</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>List Servlet</servlet-name>
+		<url-pattern>/list</url-pattern>
+	</servlet-mapping>
+
+	<servlet>
+		<servlet-name>Search Servlet</servlet-name>
+		<servlet-class>com.ko.na.web.SearchServlet</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>Search Servlet</servlet-name>
+		<url-pattern>/search</url-pattern>
+	</servlet-mapping>
+
+	<servlet>
+		<servlet-name>Update Servlet</servlet-name>
+		<servlet-class>com.ko.na.web.UpdateServlet</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>Update Servlet</servlet-name>
+		<url-pattern>/update</url-pattern>
+	</servlet-mapping>
+
+	<welcome-file-list>
+		<welcome-file>cntlr</welcome-file>
+	</welcome-file-list>
+</web-app>
+
+
+
+
+

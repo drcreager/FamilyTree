@@ -1,0 +1,34 @@
+#tbl1 {  font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;  
+               width: 100%;  
+               border-collapse: collapse;}
+#tbl1 td, #tbl1 th {  font-size: 1em;  
+                      border: 0px solid #D0D2EF;  
+                      padding: 3px 7px 2px 7px;}
+#tbl1 th {  font-size: 1.1em;  
+            text-align: center;  
+            padding-top: 5px;  
+            padding-bottom: 4px;  
+            background-color: #2B33C6;  
+            color: #ffffff;}
+#tbl1 tr.alt td {  color: #000000;
+                   border: 0px solid #2B33C6;  
+                   background-color: #D0D2EF;}
+                   
+#tbl2 {  font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;  
+               width: 100%;  
+               border-collapse: collapse;}
+#tbl2 td, #tbl2 th {  font-size: 1em;  
+                      border: 0px solid #D0D2EF;  
+                      padding: 0px 0px 0px 0px;}
+#tbl2 th {  font-size: 1.1em;  
+            text-align: center;  
+            padding-top: 0px;  
+            padding-bottom: 0px;  
+            background-color: #2B33C6;  
+            color: #ffffff;}
+#tbl2 tr.alt td {  color: #000000;
+                   border: 0px solid #2B33C6;  
+                   background-color: #D0D2EF;}
+input {vertical-align: top;
+             width: 100%; 
+             height: 100%}
