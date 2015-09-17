@@ -96,6 +96,6 @@ public class Request extends MessageBase{
 	}
 	
 	public String toString(){
-		return getActionStr() + " " + selector.get(0).toString();
+		return getActionStr() + ((selector == null) ? "" : " " + selector.get(0).toString());
 	}
 } // end class

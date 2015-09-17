@@ -15,8 +15,6 @@ import org.junit.Test;
 
 import com.ko.na.Expression;
 import com.ko.na.ExpressionList;
-import com.ko.na.database.DocGen;
-import com.mysql.jdbc.exceptions.jdbc4.MySQLSyntaxErrorException;
 
 
 /**
@@ -29,12 +27,14 @@ public class MQClientTest  implements javax.jms.MessageListener{
 	protected MQClient client;
 	protected int      msgCount;
 	protected boolean  active;
+	protected boolean  debug;
 
 
 	public MQClientTest() throws JMSException{
 		client = new MQClient();
 		msgCount = 1;
 		setActive(false);
+		debug = false;
 	} // end constructor
 	
 	
@@ -42,6 +42,10 @@ public class MQClientTest  implements javax.jms.MessageListener{
 		return active;
 	}
 
+	public boolean isDebug(){
+		return debug;
+	}
+	
 	public void setActive(boolean active) {
 		this.active = active;
 	}
@@ -49,7 +53,7 @@ public class MQClientTest  implements javax.jms.MessageListener{
 	@SuppressWarnings("unchecked")
 	public void onMessage(Message msg){
 		try {
-			client.onResponseMessage(msg, false);
+			client.onResponseMessage(msg, isDebug());
 			
 			/*
 			 * Retrieve and show the response
@@ -92,12 +96,21 @@ public class MQClientTest  implements javax.jms.MessageListener{
 	} // end canInstantiateAndTerminateSuccessfully() method
 	
     @Test
-	public void canRequestAQualifiedPersonList(){
+	public void canRequestAQualifiedPersonList() throws MessageException{
+    	send("Person", new Expression("surname","like","St*"));
+	} // end canRetrieveAQualifiedPersonList() method
+    
+    @Test
+	public void canRequestAQualifiedFamilyList() throws MessageException{
+    	send("Family", new Expression("husband","like","*Ross*"));
+	} // end canRetrieveAQualifiedFamilyList() method
+
+	public void send(String grpName, Expression selExp){
 		try{
 			setActive(true);
-			ExpressionList selector = new ExpressionList(new Expression("given","like","Donald%"));
+			ExpressionList selector = new ExpressionList(selExp);
 			Request request = new Request(Request.RETRIEVE, selector);
-			client.send(request,"Person");
+			client.send(request,grpName);
 			client.getConsumer(MQClient.TEMP).setMessageListener(this);
 			assertEquals(1,1);
 			//assertEquals("Larry", person.getName());
@@ -105,88 +118,7 @@ public class MQClientTest  implements javax.jms.MessageListener{
 		} catch (Exception ex1){
 			fail("Exception: " + ex1.getMessage());
 		} // end try/catch
-	} // end canRetrieveAQualifiedPersonList() method
-	
-	/**
-	 * Retrieve request from the Queue and process
-	 * @throws JMSException 
-	 */
-    @Test
-	public void test02() throws JMSException{
-		Request request;
-		Response response;
-
-		    request = (Request) client.recv();  // Receive from standard queue
-		    
-			/*
-			 * Retrieve and show the request
-			 */
-			System.out.println(msgCount++ 
-					         + " " + client.getMessage().getJMSCorrelationID()
-			                 + " " + client.getMessage().getStringProperty("JMSXGroupID")
-			                 + " " + request);
-			
-			try{
-				/*
-				 * Process the request 
-				 */
-				switch (client.getMessage().getStringProperty("JMSXGroupID").toLowerCase()){
-				case "person":
-					String sql = "select * from t_person where " + request.getSelector().get(0).toString() + ";";
-					ArrayList<HashMap<String,Object>> list = (new DocGen()).getListData(sql);
-					
-					/*
-					 * construct a response
-					 */
-					response = new Response(request);
-					response.setPayload(list);
-					response.setReturnCode(Response.RC_SUCCESSFUL);
-					response.setFeedback(Response.FB_NONE);
-					client.send(response,"person");
-					break;
-					
-				default:
-					break;
-				} // end switch 
-
-			} catch (MySQLSyntaxErrorException ex1) {
-				response = new Response(request);
-				response.setReturnCode(Response.RC_ERROR);
-				response.setFeedback(Response.FB_MYSQL_SYNTAX_ERROR);
-				response.setErrMessage(ex1.getMessage());
-				client.send(response,"person");
-				
-			} catch (Exception ex1){
-				System.out.println("caught " + ex1);
-			}
-	} // end test02() method
-
-
-	/**
-	 * Retrieve response from the Queue and display
-	 * @throws JMSException 
-	 */
-	@SuppressWarnings("unchecked")
-    @Test
-	public void test03() throws JMSException{
-		Response response;
-		while ((response = (Response) client.recvResponse()) != null){ // Receive from temp queue
-			/*
-			 * Retrieve and show the response
-			 */
-			System.out.println(msgCount++ 
-					         + " " + client.getMessage().getJMSCorrelationID()
-			                 + " " + client.getMessage().getStringProperty("JMSXGroupID")
-			                 + " " + response);
-			int i =1;
-			if (! response.hasErrors()){
-				for (HashMap<String,Object> map : (ArrayList<HashMap<String,Object>>) response.getPayload()){
-					System.out.println((msgCount - 1) + ":" + i++ + " " + map.entrySet());
-				} // end for 
-			} // end if 
-			
-		} // end while 
-	} // end test03() method
+	}
 
 	/**
 	 * Testing harness.
@@ -194,19 +126,27 @@ public class MQClientTest  implements javax.jms.MessageListener{
 	 * @throws Exception  to support unanticipated exceptions.
 	 */
 	public static void main(String[] args) throws Exception {
-		MQClientTest client = new MQClientTest();
-		System.out.println("Client started ...");
+		MQClientTest client;
 		
-		//client.canInstantiateAndTerminateSuccessfully();
-		//client = new MQClientTest();
+		client = new MQClientTest();
+		/*
+		System.out.println(client.getClass().getName() + " started ...");
+		client.canInstantiateAndTerminateSuccessfully();
+		*/
 		
-		client.canRequestAQualifiedPersonList();  // send request
 		
-		//client.test02();  // retrieve request and prepare response
+		client = new MQClientTest();
+		client.canRequestAQualifiedFamilyList();
 		while (client.isActive()) Thread.sleep(1000L);
-		//client.test03();  // retrieve response
 		client.terminate();
-		System.out.println("Client terminated ...");
+		
+		/*
+		client = new MQClientTest();
+		client.canRequestAQualifiedPersonList();  // send request
+		while (client.isActive()) Thread.sleep(1000L);
+		client.terminate();
+		*/
+		System.out.println(client.getClass().getName() + " terminated.");
 	} // end main() method
 
 }

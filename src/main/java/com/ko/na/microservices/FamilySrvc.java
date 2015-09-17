@@ -10,12 +10,12 @@ import com.ko.na.database.DocGen;
 import com.ko.na.messaging.Response;
 import com.mysql.jdbc.exceptions.jdbc4.MySQLSyntaxErrorException;
 
-public class PersonSrvc extends SrvcBase {
-	public static final String SERVICE = "Person";
+public class FamilySrvc extends SrvcBase {
+	public static final String SERVICE = "Family";
 
 	protected int msgCount;
 
-	public PersonSrvc() throws JMSException {
+	public FamilySrvc() throws JMSException {
 		super(SERVICE);
 		msgCount = 1;
 	}
@@ -40,7 +40,7 @@ public class PersonSrvc extends SrvcBase {
 			 */
 			switch (client.getMessage().getStringProperty("JMSXGroupID").toLowerCase()) {
 			case "person":
-				String sql = "select * from t_person " 
+				String sql = "select * from v_family_grp_rcrd " 
 			               + ((client.getRequest().getSelector() == null) 
 			               ? ";" 
 			               : " where " + client.getRequest().getSelector().get(0).toString() + ";");
@@ -80,4 +80,4 @@ public class PersonSrvc extends SrvcBase {
 			ex1.printStackTrace();
 		}
 	} // end onMessage() method
-} // end PersonSrvc class
+} // end FamilySrvc class

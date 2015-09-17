@@ -3,6 +3,8 @@ package com.ko.na.messaging;
 import javax.jms.JMSException;
 import javax.jms.Message;
 
+import com.ko.na.Utility;
+
 /**
  * A microservice response message.
  * 
@@ -19,6 +21,12 @@ public class Response extends MessageBase{
 	public final static int FB_MYSQL_SYNTAX_ERROR = 2;
 	
 	private static final long serialVersionUID = -2743433479819455895L;
+	public static void setHeaderProperties(Message rspMsg, Message rqstMsg) throws JMSException{
+		rspMsg.setJMSCorrelationID(rqstMsg.getJMSCorrelationID());
+		rspMsg.setJMSCorrelationID(rqstMsg.getJMSCorrelationID());
+		rspMsg.setStringProperty("JMSXGroupID",rqstMsg.getStringProperty("JMSXGroupID"));
+	}
+	
 	/**
 	 * The request message to which this object is responding.
 	 */
@@ -39,15 +47,24 @@ public class Response extends MessageBase{
 	 */
 	protected String errMessage;
 
+	/**
+	 * Duration of the data extract in milliseconds
+	 */
+	protected long   dataDur;
+	
 	public Response() {
 		super();
 		setReturnCode(RC_SUCCESSFUL);
 		setFeedback(FB_NONE);
 	} // end constructor
-	
+
 	public Response(Request requestMsg){
 		this();
 		setRequest(requestMsg);
+	}
+
+	public long getDataDuration() {
+		return dataDur;
 	}
 
 	public String getErrMessage() {
@@ -70,18 +87,16 @@ public class Response extends MessageBase{
 		return returnCode == RC_ERROR;
 	}
 
+	public void setDataDuration(long dataDur) {
+		this.dataDur = dataDur;
+	}
+
 	public void setErrMessage(String errMessage) {
 		this.errMessage = errMessage;
 	}
-
+	
 	public void setFeedback(int feedback) {
 		this.feedback = feedback;
-	}
-	
-	public static void setHeaderProperties(Message rspMsg, Message rqstMsg) throws JMSException{
-		rspMsg.setJMSCorrelationID(rqstMsg.getJMSCorrelationID());
-		rspMsg.setJMSCorrelationID(rqstMsg.getJMSCorrelationID());
-		rspMsg.setStringProperty("JMSXGroupID",rqstMsg.getStringProperty("JMSXGroupID"));
 	}
 
 	public void setRequest(Request request) {
@@ -93,8 +108,10 @@ public class Response extends MessageBase{
 	}
 	
 	public String toString(){
-		return (getRequest().getActionStr() + " " + getRequest().getSelector().get(0).toString() 
-				+ " ReturnCode=" + getReturnCode() + " Feedback=" + getFeedback() 
+		return (getRequest().getActionStr() 
+				+ ((getRequest().getSelector() == null) ? "" :  " " + getRequest().getSelector().get(0).toString())
+				+ " ReturnCode=" + getReturnCode() + " Feedback=" + getFeedback()
+				+ " ExtractTime=" + Utility.getDurationStr(getDataDuration(), Utility.FMT_SHRT)
 				+ ((hasErrors()) ?  " " + getErrMessage() : "")).trim();
 	}
 	

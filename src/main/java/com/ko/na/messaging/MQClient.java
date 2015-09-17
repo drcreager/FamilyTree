@@ -113,6 +113,5 @@ public class MQClient extends MQBase {
 			ex1.printStackTrace();
 		} // end try/catch
 	} // end send() method
-
-
-}
+	
+} // end MQClient class

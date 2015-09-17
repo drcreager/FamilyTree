@@ -16,6 +16,7 @@ public class SrvcMgr  {
 	public final static long MILLISECOND = 1000;
 	
 	public SrvcMgr(){
+		System.out.println(this.getClass().getName() + " has been instantiated.");
 		process = new Process[10];
 		inst = 0;
 		setActive(true);
@@ -43,15 +44,15 @@ public class SrvcMgr  {
 	} // end setProcess() method 
 	
 	class ShutdownThrd extends Thread {
-		protected PersonSrvc perSrvc;
+		protected SrvcBase srvc;
 		
-		public ShutdownThrd(PersonSrvc arg){
-			perSrvc = arg;
+		public ShutdownThrd(SrvcBase arg){
+			srvc = arg;
 		} // end constructor
 		
 		public void run(){
-			System.out.println("SrvcMgr: running shutdown procedure ...");
-			perSrvc.terminate();
+			System.out.println(this.getClass().getName() + " is running shutdown procedure ...");
+			srvc.terminate();
 			setActive(false);
 		} // end run() method 
 	} // end ShutdownThrd class
@@ -59,7 +60,9 @@ public class SrvcMgr  {
 	public static void main(String[] args) throws Exception {
 		SrvcMgr srvcMgr = new SrvcMgr();
 		PersonSrvc perSrvc = new PersonSrvc();
-		Runtime.getRuntime().addShutdownHook(srvcMgr.new ShutdownThrd(perSrvc));		
+		FamilySrvc famSrvc = new FamilySrvc();
+		Runtime.getRuntime().addShutdownHook(srvcMgr.new ShutdownThrd(perSrvc));
+		Runtime.getRuntime().addShutdownHook(srvcMgr.new ShutdownThrd(famSrvc));		
 		
 		while (srvcMgr.isActive()) Thread.sleep(POLL_INTVL * MILLISECOND);
 	} // end main() method
