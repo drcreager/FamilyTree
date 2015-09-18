@@ -30,11 +30,14 @@ public class MQClientTest  implements javax.jms.MessageListener{
 	protected boolean  debug;
 
 
-	public MQClientTest() throws JMSException{
-		client = new MQClient();
+	public MQClientTest(){;}
+	
+	public MQClientTest(String service) throws JMSException{
+		client = new MQClient(MQClient.CLIENT_QUEUE_NAMES, "JMSXGroupID = '" + service + "'");
+		client.getConsumer(MQClient.SECONDARY).setMessageListener(this);
 		msgCount = 1;
 		setActive(false);
-		debug = false;
+		debug = true;
 	} // end constructor
 	
 	
@@ -89,21 +92,31 @@ public class MQClientTest  implements javax.jms.MessageListener{
 	public void canInstantiateAndTerminateSuccessfully(){
     	assertNotNull("Client was not instantiated",client);
     	client.terminate();
-		assertNull("Producer[Stnd] is still instantiated",client.producer[MQClient.STANDARD]);
-		assertNull("Producer[Temp] is still instantiated",client.producer[MQClient.TEMP]);
-		assertNull("Consumer[Stnd] is still instantiated",client.producer[MQClient.STANDARD]);
-		assertNull("Consumer[Temp] is still instantiated",client.producer[MQClient.TEMP]);
+		assertNull("Producer[Stnd] is still instantiated",client.producer[MQClient.PRIMARY]);
+		assertNull("Producer[Temp] is still instantiated",client.producer[MQClient.SECONDARY]);
+		assertNull("Consumer[Stnd] is still instantiated",client.producer[MQClient.PRIMARY]);
+		assertNull("Consumer[Temp] is still instantiated",client.producer[MQClient.SECONDARY]);
 	} // end canInstantiateAndTerminateSuccessfully() method
 	
     @Test
 	public void canRequestAQualifiedPersonList() throws MessageException{
-    	send("Person", new Expression("surname","like","St*"));
+    	send("Person", new Expression("surname","like","C*"));
 	} // end canRetrieveAQualifiedPersonList() method
     
     @Test
 	public void canRequestAQualifiedFamilyList() throws MessageException{
     	send("Family", new Expression("husband","like","*Ross*"));
 	} // end canRetrieveAQualifiedFamilyList() method
+    
+    @Test
+	public void canRequestAQualifiedEventList() throws MessageException{
+    	send("Event", new Expression("id","like","*"));
+	} // end canRetrieveAQualifiedEventList() method
+    
+    @Test
+	public void canRequestAQualifiedMediaList() throws MessageException{
+    	send("Media", new Expression("id","like","*"));
+	} // end canRetrieveAQualifiedMediaList() method
 
 	public void send(String grpName, Expression selExp){
 		try{
@@ -111,13 +124,16 @@ public class MQClientTest  implements javax.jms.MessageListener{
 			ExpressionList selector = new ExpressionList(selExp);
 			Request request = new Request(Request.RETRIEVE, selector);
 			client.send(request,grpName);
-			client.getConsumer(MQClient.TEMP).setMessageListener(this);
 			assertEquals(1,1);
 			//assertEquals("Larry", person.getName());
 		
 		} catch (Exception ex1){
 			fail("Exception: " + ex1.getMessage());
 		} // end try/catch
+	}
+	
+	public void test(String service) throws JMSException, MessageException, InterruptedException{
+
 	}
 
 	/**
@@ -126,26 +142,29 @@ public class MQClientTest  implements javax.jms.MessageListener{
 	 * @throws Exception  to support unanticipated exceptions.
 	 */
 	public static void main(String[] args) throws Exception {
-		MQClientTest client;
-		
-		client = new MQClientTest();
-		/*
+		MQClientTest client = new MQClientTest("Person");
 		System.out.println(client.getClass().getName() + " started ...");
 		client.canInstantiateAndTerminateSuccessfully();
-		*/
 		
-		
-		client = new MQClientTest();
+		client = new MQClientTest("Family");
 		client.canRequestAQualifiedFamilyList();
 		while (client.isActive()) Thread.sleep(1000L);
 		client.terminate();
 		
-		/*
-		client = new MQClientTest();
-		client.canRequestAQualifiedPersonList();  // send request
+		client = new MQClientTest("Person");
+		client.canRequestAQualifiedPersonList();
 		while (client.isActive()) Thread.sleep(1000L);
 		client.terminate();
-		*/
+		
+		client = new MQClientTest("Event");
+		client.canRequestAQualifiedEventList();
+		while (client.isActive()) Thread.sleep(1000L);
+		client.terminate();
+		
+		client = new MQClientTest("Media");
+		client.canRequestAQualifiedMediaList();
+		while (client.isActive()) Thread.sleep(1000L);
+		client.terminate();
 		System.out.println(client.getClass().getName() + " terminated.");
 	} // end main() method
 

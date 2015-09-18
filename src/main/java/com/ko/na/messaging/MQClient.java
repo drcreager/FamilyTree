@@ -17,13 +17,13 @@ public class MQClient extends MQBase {
 		super();
 	} // end constructor
 	
-	public MQClient(String queue, String selector) {
-		super(queue,selector);
+	public MQClient(String[] queueNames, String selector) {
+		super(queueNames,selector);
 	} // end constructor
 
 
 	public Object recv(){
-		return recv(STANDARD,WAIT_INTVL);
+		return recv(SECONDARY,WAIT_INTVL);
 	}
 
 	/**
@@ -63,7 +63,7 @@ public class MQClient extends MQBase {
 	} // end recv
 	
 	public Object recvResponse(){
-		return recv(TEMP,WAIT_INTVL);
+		return recv(SECONDARY,WAIT_INTVL);
 	}
 
 	/**
@@ -80,15 +80,15 @@ public class MQClient extends MQBase {
 			 * Vary the sending behavior between Requests/Responses
 			 */
 			if (serObj instanceof Request) {
-				objectMessage = (ActiveMQObjectMessage) session[STANDARD].createObjectMessage(serObj);
-				Request.setHeaderProperties(setTempQueue(), objectMessage, groupId);
-				producer[STANDARD].send(getStndDest(), objectMessage);
+				objectMessage = (ActiveMQObjectMessage) session.createObjectMessage(serObj);
+				Request.setHeaderProperties(getSecDest(), objectMessage, groupId);
+				producer[PRIMARY].send(getPriDest(), objectMessage);
 			} // end if
 			
 			if (serObj instanceof Response) {
-				objectMessage = (ActiveMQObjectMessage) session[TEMP].createObjectMessage(serObj);
+				objectMessage = (ActiveMQObjectMessage) session.createObjectMessage(serObj);
 				Response.setHeaderProperties(objectMessage, prevMsg);
-				producer[TEMP].send(prevMsg.getJMSReplyTo(), objectMessage);
+				producer[PRIMARY].send(prevMsg.getJMSReplyTo(), objectMessage);
 			} // end if 
 			
 
@@ -104,9 +104,9 @@ public class MQClient extends MQBase {
 	 */
 	public void send(String msg, String groupId) {
 		try {
-			textMessage = session[STANDARD].createTextMessage(msg);
-			Request.setHeaderProperties(getStndDest(),textMessage, groupId);
-			producer[STANDARD].send(textMessage);
+			textMessage = session.createTextMessage(msg);
+			Request.setHeaderProperties(getPriDest(),textMessage, groupId);
+			producer[PRIMARY].send(textMessage);
 
 		} catch (Exception ex1) {
 			System.out.println("Caught: " + ex1);
