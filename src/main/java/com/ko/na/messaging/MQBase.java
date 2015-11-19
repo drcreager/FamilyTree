@@ -22,36 +22,33 @@ import org.apache.activemq.command.ActiveMQObjectMessage;
  * @author Daniel R. Creager
  */
 public class MQBase {
-	public static final String SEND_QUEUE = "FamilyTree.Request";
-	public static final String RECV_QUEUE = "FamilyTree.Response";
 	public static final long WAIT_INTVL = 1000L;
 	public static final String MQ_BROKER = "tcp://localhost:61616";
 	public static final String MQ_VM = "vm://localhost";
 
-	public static final int STANDARD = 0;
-	public static final int TEMP = 1;
+	public static final String[] CLIENT_QUEUE_NAMES = {"FamilyTree.Request", "FamilyTree.Response"};
+	public static final String[] PROVDR_QUEUE_NAMES = {"FamilyTree.Response", "FamilyTree.Request"};
+	public static final int PRIMARY = 0;
+	public static final int SECONDARY = 1;
+	
 	protected ActiveMQConnectionFactory connectionFactory;
 
-	protected Destination stndDest;
-	protected Destination tempDest;
+	protected Destination priDest;
+	protected Destination secDest;
 
-	protected String queue;
+	protected String[] queueName;
 	protected int msgCount;
 
 	protected Request request;
-	
 	protected Response response;
 
 	/**
 	 * Consumer[0] Standard Message Producer/Consumer Consumer[1] Temp Message
 	 * Producer/Consumer for message correlation.
 	 */
-	protected Connection[] connection;
-
-	protected ActiveMQSession[] session;
-
-	protected MessageProducer[] producer;
-
+	protected Connection                connection;
+	protected ActiveMQSession           session;
+	protected MessageProducer[]         producer;
 	protected ActiveMQMessageConsumer[] consumer;
 
 	/**
@@ -70,46 +67,44 @@ public class MQBase {
 	 * A message structure with an associated ActiveMQ object payload
 	 */
 	protected ActiveMQObjectMessage amqObjectMessage;
-
+    
 	public MQBase() {
-		this(SEND_QUEUE, null);
+		this(CLIENT_QUEUE_NAMES, null);
 	}
 
-	public MQBase(String queue, String selector) {
-		connection = new Connection[2];
-		session = new ActiveMQSession[2];
+	public MQBase(String[] queue, String selector) {
 		consumer = new ActiveMQMessageConsumer[2];
 		producer = new MessageProducer[2];
+		queueName = new String[2];
 		msgCount = 1;
+		
 
 		try {
 			// Create a ConnectionFactory
 			connectionFactory = new ActiveMQConnectionFactory(MQ_BROKER);
 
 			// Create Connections
-			connection[STANDARD] = connectionFactory.createConnection();
-			connection[STANDARD].start();
-			connection[TEMP] = connectionFactory.createConnection();
-			connection[TEMP].start();
+			connection = connectionFactory.createConnection();
+			connection.start();
 
 			// Create Sessions
-			session[STANDARD] = (ActiveMQSession) connection[STANDARD].createSession(false,
-					ActiveMQSession.AUTO_ACKNOWLEDGE);
-			session[TEMP] = (ActiveMQSession) connection[TEMP].createSession(false, ActiveMQSession.AUTO_ACKNOWLEDGE);
+			session = (ActiveMQSession) connection.createSession(false, ActiveMQSession.AUTO_ACKNOWLEDGE);
 
-			// Set the destination queue
-			this.queue = queue;
+			// Set the request queue name
+			queueName[0] = queue[0];
+			queueName[1] = queue[1];
 
 			// Create the Standard Destination Queue
-			setStndDest(session[STANDARD].createQueue(queue));
+			setPriDest(session.createQueue(queueName[PRIMARY]));
+			setSecDest(session.createQueue(queueName[SECONDARY]));
 
 			// Create a MessageProducer from the Session to a Queue
-			producer[STANDARD] = session[STANDARD].createProducer(getStndDest());
-			producer[STANDARD].setDeliveryMode(DeliveryMode.NON_PERSISTENT);
+			producer[PRIMARY] = session.createProducer(getPriDest());
+			producer[PRIMARY].setDeliveryMode(DeliveryMode.NON_PERSISTENT);
 
 			// Create a MessageConsumer from the Session to a Queue
-			consumer[STANDARD] = (ActiveMQMessageConsumer) session[STANDARD].createConsumer(getStndDest(), selector);
-
+			consumer[SECONDARY] = (ActiveMQMessageConsumer) session.createConsumer(getSecDest(), selector);
+			
 		} catch (javax.jms.JMSException ex1) {
 			System.out.println("Caught: " + ex1 + "\nPremature termination required.");
 			System.exit(-1);
@@ -149,12 +144,12 @@ public class MQBase {
 		return response;
 	}
 
-	public Destination getStndDest() {
-		return stndDest;
+	public Destination getPriDest() {
+		return priDest;
 	}
 
-	public Destination getTempDest() {
-		return tempDest;
+	public Destination getSecDest() {
+		return secDest;
 	}
 
 	public TextMessage getTextMessage() {
@@ -166,7 +161,7 @@ public class MQBase {
 			if (debug) System.out.println(msg);
 
 			setMessage(msg);
-			setTempQueue(msg.getJMSReplyTo(), false);
+			//setTempQueue(msg.getJMSReplyTo(), false);
 			if (msg instanceof TextMessage) {
 				request = new Request();
 				request.setPayload(((TextMessage) msg).getText());
@@ -236,27 +231,12 @@ public class MQBase {
 		this.response = response;
 	}
 
-	public void setStndDest(Destination stndDest) {
-		this.stndDest = stndDest;
+	public void setPriDest(Destination dest) {
+		this.priDest = dest;
 	}
 
-	public void setTempDest(Destination stndDest) {
-		this.tempDest = stndDest;
-	}
-
-	public Destination setTempQueue() throws JMSException {
-		Destination tempDest = session[TEMP].createTemporaryQueue();
-		setTempQueue(tempDest, true);
-		return tempDest;
-	}
-
-	public void setTempQueue(Destination dest, boolean consumerFlg) throws JMSException {
-		setTempDest(dest);
-		if (consumerFlg) {
-			consumer[TEMP] = (ActiveMQMessageConsumer) session[TEMP].createConsumer(dest);
-		}
-		producer[TEMP] = session[TEMP].createProducer(dest);
-		producer[TEMP].setDeliveryMode(DeliveryMode.NON_PERSISTENT);
+	public void setSecDest(Destination dest) {
+		this.secDest = dest;
 	}
 
 	public void setTextMessage(TextMessage textMessage) {
@@ -265,39 +245,31 @@ public class MQBase {
 
 	public void terminate() {
 		try {
-			if (producer[STANDARD] != null) {
-				producer[STANDARD].close();
-				producer[STANDARD] = null;
+			if (producer[PRIMARY] != null) {
+				producer[PRIMARY].close();
+				producer[PRIMARY] = null;
 			}
-			if (producer[TEMP] != null) {
-				producer[TEMP].close();
-				producer[TEMP] = null;
+			if (producer[SECONDARY] != null) {
+				producer[SECONDARY].close();
+				producer[SECONDARY] = null;
 			}
-			if (consumer[STANDARD] != null) {
-				consumer[STANDARD].close();
-				consumer[STANDARD] = null;
+			if (consumer[PRIMARY] != null) {
+				consumer[PRIMARY].close();
+				consumer[PRIMARY] = null;
 			}
-			if (consumer[TEMP] != null) {
-				consumer[TEMP].close();
-				consumer[TEMP] = null;
+			if (consumer[SECONDARY] != null) {
+				consumer[SECONDARY].close();
+				consumer[SECONDARY] = null;
 			}
-			if (session[STANDARD] != null) {
-				session[STANDARD].close();
-				session[STANDARD] = null;
+			if (session != null) {
+				session.close();
+				session = null;
 			}
-			if (session[TEMP] != null) {
-				session[TEMP].close();
-				session[TEMP] = null;
-			}
-			if (connection[STANDARD] != null) {
-				connection[STANDARD].stop();
-				connection[STANDARD].close();
-				connection[STANDARD] = null;
-			}
-			if (connection[TEMP] != null) {
-				connection[TEMP].stop();
-				connection[TEMP].close();
-				connection[TEMP] = null;
+
+			if (connection != null) {
+				connection.stop();
+				connection.close();
+				connection = null;
 			}
 			connectionFactory = null;
 
